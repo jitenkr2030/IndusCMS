@@ -569,3 +569,375 @@ class EntityDetailAPITest(TestCase):
         self.assertFalse(
             response.data["success"]
         )
+
+
+class EntityUpdateAPITest(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="entityupdatetest",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Entity Update Business",
+            slug="entity-update-business",
+            industry="retail",
+            country="India",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+
+        self.permission = Permission.objects.create(
+            code="entity.manage",
+            name="Manage Entities",
+            resource="entity",
+            action="manage",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=self.permission,
+        )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+            description="Customer records",
+            is_active=True,
+        )
+
+        self.client.force_authenticate(
+            user=self.user
+        )
+
+    def test_update_entity(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+                "slug": "clients",
+                "description": "Updated client records",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertTrue(
+            response.data["success"]
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.name,
+            "Clients",
+        )
+
+        self.assertEqual(
+            self.entity.slug,
+            "clients",
+        )
+
+        self.assertEqual(
+            self.entity.description,
+            "Updated client records",
+        )
+
+    def test_partial_update_preserves_other_fields(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.name,
+            "Clients",
+        )
+
+        self.assertEqual(
+            self.entity.slug,
+            "customers",
+        )
+
+        self.assertEqual(
+            self.entity.description,
+            "Customer records",
+        )
+
+    def test_update_creates_audit_log(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        audit = AuditLog.objects.filter(
+            business=self.business,
+            action="entity.updated",
+            resource="entity",
+            object_id=str(self.entity.id),
+        ).first()
+
+        self.assertIsNotNone(audit)
+
+        self.assertEqual(
+            audit.metadata["old_data"]["name"],
+            "Customers",
+        )
+
+        self.assertEqual(
+            audit.metadata["new_data"]["name"],
+            "Clients",
+        )
+
+    def test_user_without_manage_permission_cannot_update(self):
+        self.role.role_permissions.all().delete()
+
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.name,
+            "Customers",
+        )
+
+    def test_non_member_cannot_update(self):
+        other_user = User.objects.create_user(
+            username="otherentityuser",
+            password="test-password-123",
+        )
+
+        self.client.force_authenticate(
+            user=other_user
+        )
+
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.name,
+            "Customers",
+        )
+
+    def test_entity_from_another_business_cannot_be_updated(self):
+        another_business = Business.objects.create(
+            name="Another Entity Business",
+            slug="another-entity-business",
+            industry="restaurant",
+            country="India",
+        )
+
+        another_entity = EntityDefinition.objects.create(
+            business=another_business,
+            name="Orders",
+            slug="orders",
+            description="Order records",
+            is_active=True,
+        )
+
+        response = self.client.patch(
+            f"/api/entities/{another_entity.id}/",
+            {
+                "name": "Updated Orders",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        another_entity.refresh_from_db()
+
+        self.assertEqual(
+            another_entity.name,
+            "Orders",
+        )
+
+    def test_inactive_entity_returns_404(self):
+        self.entity.is_active = False
+        self.entity.save(
+            update_fields=["is_active"]
+        )
+
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+    def test_nonexistent_entity_returns_404(self):
+        import uuid
+
+        response = self.client.patch(
+            f"/api/entities/{uuid.uuid4()}/",
+            {
+                "name": "Clients",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+    def test_duplicate_slug_returns_400(self):
+        EntityDefinition.objects.create(
+            business=self.business,
+            name="Products",
+            slug="products",
+            description="Product records",
+            is_active=True,
+        )
+
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "slug": "products",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.slug,
+            "customers",
+        )
+
+    def test_empty_name_returns_400(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "name": "   ",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.name,
+            "Customers",
+        )
+
+    def test_empty_slug_returns_400(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "slug": "!!!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertEqual(
+            self.entity.slug,
+            "customers",
+        )
+
+    def test_is_active_is_not_allowed(self):
+        response = self.client.patch(
+            f"/api/entities/{self.entity.id}/",
+            {
+                "is_active": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            400,
+        )
+
+        self.entity.refresh_from_db()
+
+        self.assertTrue(
+            self.entity.is_active
+        )
