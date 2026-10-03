@@ -1,45 +1,32 @@
 # IndusCMS
 
-**Industry-first Business Platform built with Django**
+**Industry-first CMS & Business Application Platform built with Django**
 
-IndusCMS is a modular CMS and business application platform designed
-to build industry-specific software on top of reusable business engines.
+IndusCMS is a modular, industry-first platform for building configurable business applications on top of reusable engines for businesses, dynamic entities, relationships, workflows, APIs and future industry templates.
 
-The goal is to provide a flexible foundation for applications such as:
-
-- CRM
-- HR Management
-- Inventory
-- Sales & Purchase
-- Accounting
-- Fleet Management
-- Logistics
-- Booking
-- Ticketing
-- Compliance
-- Field Service
-- Manufacturing
-
-Instead of building every business application from scratch,
-IndusCMS provides reusable infrastructure for entities, fields,
-records, permissions, workflows, APIs and industry templates.
+The goal is to avoid rebuilding the same business infrastructure for every industry.
 
 ## Project Status
 
-**Phase 3 — Dynamic Entity Engine: COMPLETE**
+**Phase 4.2 — Workflow History & Management APIs: COMPLETE**
 
-Phase 1, Phase 2 and Phase 3 are complete and tested.
+Current full test status:
 
-Current test status:
+**110 tests passed**
 
-**92 tests passed**
+Completed phases:
 
+- Phase 1 — Core CMS Foundation
+- Phase 2 — Business & Tenant Foundation
+- Phase 3 — Dynamic Entity Engine
+- Phase 4.1 — Workflow Foundation
+- Phase 4.2 — Workflow History & Management APIs
 
 ## Platform Architecture
 
 IndusCMS is being developed as a modular monolith initially.
 
-Core platform engines:
+Core engines:
 
 1. CMS Engine
 2. Business Engine
@@ -49,8 +36,7 @@ Core platform engines:
 6. Plugin Engine
 7. Industry Template Engine
 
-The architecture is designed so that these engines can be reused
-across multiple industries.
+Reusable business engines planned on top of this foundation include CRM, HR, Inventory, Sales, Purchase, Accounting, Assets, Projects, Fleet, Logistics, Booking, Ticketing, Compliance, Field Service, Subscriptions and Memberships.
 
 ## Technology Stack
 
@@ -59,7 +45,7 @@ across multiple industries.
 - Python
 - Django 5.x
 - Django REST Framework
-- PostgreSQL
+- PostgreSQL for production
 - SQLite for local development
 
 ### Planned Infrastructure
@@ -80,10 +66,7 @@ Planned:
 - Tailwind CSS
 - shadcn/ui
 
-
-## Completed Phases
-
-### Phase 1 — Core CMS Foundation
+## Phase 1 — Core CMS Foundation
 
 Completed:
 
@@ -95,39 +78,30 @@ Completed:
 - Environment configuration
 - SQLite development database
 - PostgreSQL-ready configuration
-- Gunicorn/WSGI configuration
-- WhiteNoise support
-- GitHub repository
+- Gunicorn/WSGI
+- WhiteNoise
 - Deployment configuration
-- ALLOWED_HOSTS configuration
+- GitHub repository
 
-### Phase 2 — Business & Tenant Foundation
+## Phase 2 — Business & Tenant Foundation
 
 Completed:
 
 - Business model
-- Role model
-- Permission model
-- RolePermission model
-- Membership model
-- BusinessSettings model
-- AuditLog model
+- Roles and permissions
+- Memberships
+- Business settings
+- Audit logging
 - Business onboarding service
 - Permission service
-- Audit logging service
 - Role/permission seeding
 - Django Admin integration
 
-
 ## Phase 3 — Dynamic Entity Engine
 
-The Dynamic Entity Engine allows each business to create
-custom business data structures without requiring a new Django model
-for every business object.
+The Dynamic Entity Engine allows each business to define configurable business data without creating a new Django model for every business object.
 
-### EntityDefinition
-
-Defines a business entity.
+### Entities
 
 Examples:
 
@@ -136,14 +110,10 @@ Examples:
 - Employee
 - Vehicle
 - Student
-- Patient
 - Invoice
+- Booking
 
-### FieldDefinition
-
-Defines fields belonging to an entity.
-
-Supported field types currently include:
+### Supported field types
 
 - text
 - long_text
@@ -157,116 +127,101 @@ Supported field types currently include:
 - choice
 - json
 
-### EntityRecord
+### Dynamic Entity Features
 
-Stores actual records using a JSON data structure.
-
-This allows the same platform to support different industries
-without creating separate database tables for every custom entity.
-
-## Current Dynamic Entity Features
-
-Completed:
-
-- Entity creation
-- Entity listing
-- Entity detail
-- Entity field creation
-- Dynamic field validation
+- Entity creation/list/detail
+- Entity update/deactivation
+- Entity deletion protection
+- Field creation/list/detail/update/deactivation
+- Dynamic record CRUD
+- Type validation
 - Required fields
 - Default values
 - Choice validation
-- Type validation
-- Dynamic record creation
-- Record listing
-- Record detail
-- Record update
-- Soft delete
-- Record deletion protection
+- Soft deletion
 - Pagination
-- Entity permissions
+- Search
+- Sorting
+- Dynamic forms
+- Dynamic tables
+- Entity relationships
+- Relationship validation
+- Relationship options
+- Role-based permissions
 - Audit logging
 
+## Phase 4 — Workflow Engine
 
-## Current Development Status
+### Phase 4.1 — Workflow Foundation
 
-### Phase 3 — Dynamic Entity Engine
+Completed:
 
-- [x] Entity definitions
-- [x] Field definitions
-- [x] Dynamic records
-- [x] Field validation
-- [x] Record CRUD
-- [x] Soft deletion
-- [x] Entity listing
-- [x] Entity detail
-- [x] Entity update
-- [x] Entity deactivation
-- [x] Entity deletion protection
-- [x] Permission integration
-- [x] Audit logging
-- [x] Dynamic forms
-- [x] Dynamic tables
-- [x] Search
-- [x] Sorting
-- [x] Pagination
-- [x] Entity relationships
-- [x] Relationship validation
-- [x] Relationship options
+- Workflow definitions
+- Workflow steps
+- Initial/final steps
+- Workflow transitions
+- Workflow instances
+- Instance state transitions
+- Workflow permissions
+- Workflow audit events
 
-### Phase 4 — Business Application Engine
+### Phase 4.2 — Workflow History & Management
 
-Planned reusable business modules:
+Completed:
 
-- CRM
-- Customers
-- Products
-- Inventory
-- Sales
-- Purchases
-- Employees
-- HR
-- Accounting
-- Assets
-- Projects
-- Fleet
-- Logistics
-- Bookings
-- Tickets
-- Documents
-- Compliance
-- Field Service
-- Subscriptions
-- Memberships
+- Workflow history timeline
+- Start/transition history entries
+- Completed workflow history
+- Workflow update API
+- Workflow deactivation API
+- Workflow deletion protection
+- Workflow step listing API
+- Workflow transition listing API
+- Workflow instance listing API
+- Workflow instance history API
+- Workflow management services
+- Dedicated workflow API test suite
 
-### Phase 5 — Workflow Engine
+Current verification:
 
-Planned capabilities:
+**110/110 tests passing**
 
-- Approval workflows
-- Status transitions
-- Conditions
-- Actions
+## Phase 4.3 — Next
+
+Planned:
+
+- Workflow conditions
+- Transition rules
+- Transition permissions
+- Workflow actions
 - Notifications
-- Assignment rules
-- Automation
-- Scheduled tasks
+- Webhooks
+- Record-based automation
+- Scheduled automation
 
-### Phase 6 — API & Integration Engine
+Example:
 
-Planned capabilities:
+`Invoice amount > ₹50,000 → Manager Approval → Finance Approval → Completed`
 
-- REST API expansion
+The long-term workflow model is:
+
+`Record → Condition → Transition → Action`
+
+## Phase 5 — API & Integration Engine
+
+Planned:
+
+- Expanded REST APIs
 - API authentication
 - API keys
 - Webhooks
-- External integrations
 - Import/export
+- External integrations
 - Third-party application integration
 
-### Phase 7 — Plugin Engine
+## Phase 6 — Plugin Engine
 
-Planned capabilities:
+Planned:
 
 - Installable plugins
 - Plugin lifecycle
@@ -275,7 +230,7 @@ Planned capabilities:
 - Plugin APIs
 - Industry-specific extensions
 
-### Phase 8 — Industry Templates
+## Phase 7 — Industry Templates
 
 Planned templates include:
 
@@ -290,7 +245,7 @@ Planned templates include:
 - Manufacturing
 - Real Estate
 
-Industry templates will provide reusable:
+Industry templates will combine:
 
 - Entities
 - Fields
@@ -304,3 +259,16 @@ Industry templates will provide reusable:
 - Permissions
 - Automation
 
+## Vision
+
+IndusCMS aims to become a reusable **business application infrastructure layer** where one platform can power many industry-specific SaaS products.
+
+Instead of building a separate backend foundation for every application:
+
+`Business + Dynamic Entities + Workflow + API + Plugins + Industry Template`
+
+becomes the reusable core.
+
+## License
+
+Project is under active development.
