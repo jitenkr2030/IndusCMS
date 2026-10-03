@@ -170,6 +170,11 @@ from core.api.workflow_management_views import (
     WorkflowInstanceHistoryAPIView,
 )
 
+from core.api.workflow_condition_views import (
+    WorkflowConditionCreateAPIView,
+    WorkflowConditionListAPIView,
+)
+
 urlpatterns += [
     path(
         "workflows/<uuid:workflow_id>/update/",
@@ -206,4 +211,15 @@ urlpatterns += [
         WorkflowInstanceHistoryAPIView.as_view(),
         name="workflow-instance-history",
     ),
+path(
+    "workflow-conditions/",
+    WorkflowConditionCreateAPIView.as_view(),
+    name="workflow-condition-create",
+),
+
+path(
+    "workflow-conditions/list/",
+    WorkflowConditionListAPIView.as_view(),
+    name="workflow-condition-list",
+),
 ]

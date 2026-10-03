@@ -765,3 +765,69 @@ class WorkflowHistory(models.Model):
 
     def __str__(self):
         return f"{self.instance_id}: {self.action}"
+
+
+class WorkflowCondition(models.Model):
+    OPERATOR_CHOICES = (
+        ("equals", "Equals"),
+        ("not_equals", "Not Equals"),
+        ("greater_than", "Greater Than"),
+        ("greater_than_or_equal", "Greater Than or Equal"),
+        ("less_than", "Less Than"),
+        ("less_than_or_equal", "Less Than or Equal"),
+        ("contains", "Contains"),
+        ("is_true", "Is True"),
+        ("is_false", "Is False"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    transition = models.ForeignKey(
+        WorkflowTransition,
+        on_delete=models.CASCADE,
+        related_name="conditions",
+    )
+
+    field_slug = models.CharField(
+        max_length=160,
+    )
+
+    operator = models.CharField(
+        max_length=40,
+        choices=OPERATOR_CHOICES,
+    )
+
+    value = models.JSONField(
+        null=True,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = ("field_slug", "created_at")
+        indexes = [
+            models.Index(
+                fields=("transition", "is_active"),
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.transition.name}: "
+            f"{self.field_slug} {self.operator}"
+        )

@@ -11,6 +11,7 @@ from core.models import (
 )
 from core.services.audit import log_action
 from core.services.permissions import get_membership, user_can
+from core.services.workflow_condition import evaluate_transition_conditions
 
 
 
@@ -339,6 +340,14 @@ def transition_workflow_instance(
 
     if not transition.is_active:
         raise ValueError("Transition is inactive.")
+
+    if not evaluate_transition_conditions(
+        transition,
+        instance.record,
+    ):
+        raise ValueError(
+            "Workflow transition conditions are not satisfied."
+        )
 
     old_step = instance.current_step
     new_step = transition.to_step
