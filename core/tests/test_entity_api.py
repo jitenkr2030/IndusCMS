@@ -5,6 +5,8 @@ from rest_framework.test import APIClient
 from core.models import (
     Business,
     EntityDefinition,
+    EntityRecord,
+    FieldDefinition,
     Permission,
     Role,
     RolePermission,
@@ -941,3 +943,1123 @@ class EntityUpdateAPITest(TestCase):
         self.assertTrue(
             self.entity.is_active
         )
+
+
+class EntityDeactivateAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="deactivate_test_user",
+            password="test-password-123",
+        )
+        self.business = Business.objects.create(
+            name="Deactivate Test Business",
+            slug="deactivate-test-business",
+            industry="retail",
+            country="India",
+        )
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+        permission = Permission.objects.create(
+            code="entity.manage",
+            name="Manage Entities",
+            resource="entity",
+            action="manage",
+        )
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+        )
+        self.url = f"/api/entities/{self.entity.id}/deactivate/"
+        self.client.force_authenticate(user=self.user)
+
+    def test_deactivate_entity(self):
+        response = self.client.patch(self.url)
+        self.entity.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.entity.is_active)
+
+    def test_deactivation_creates_audit_log(self):
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(AuditLog.objects.filter(
+            business=self.business,
+            action="entity.deactivated",
+            object_id=str(self.entity.id),
+        ).exists())
+
+    def test_user_without_manage_permission_gets_403(self):
+        self.role.role_permissions.all().delete()
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, 403)
+        self.entity.refresh_from_db()
+        self.assertTrue(self.entity.is_active)
+
+    def test_non_member_gets_403(self):
+        outsider = User.objects.create_user(
+            username="deactivate_outsider",
+            password="test-password-123",
+        )
+        self.client.force_authenticate(user=outsider)
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_already_inactive_entity_gets_400(self):
+        self.entity.is_active = False
+        self.entity.save(update_fields=["is_active"])
+        response = self.client.patch(self.url)
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_entity_gets_404(self):
+        import uuid
+        response = self.client.patch(
+            f"/api/entities/{uuid.uuid4()}/deactivate/"
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class FieldManagementAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="fieldmanagement",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Field Management Business",
+            slug="field-management-business",
+            industry="retail",
+            country="India",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+
+        for code, action in [
+            ("entity.view", "view"),
+            ("entity.manage", "manage"),
+        ]:
+            permission = Permission.objects.create(
+                code=code,
+                name=code,
+                resource="entity",
+                action=action,
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+        )
+
+        self.field = self.entity.fields.create(
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            position=1,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_field_list(self):
+        response = self.client.get(
+            f"/api/entity-fields/list/?entity_id={self.entity.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_field_detail(self):
+        response = self.client.get(
+            f"/api/entity-fields/{self.field.id}/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["field"]["slug"], "phone")
+
+    def test_field_update(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/update/",
+            {"name": "Mobile", "required": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.field.refresh_from_db()
+        self.assertEqual(self.field.name, "Mobile")
+        self.assertTrue(self.field.required)
+
+    def test_field_deactivate(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/deactivate/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.field.refresh_from_db()
+        self.assertFalse(self.field.is_active)
+
+    def test_inactive_field_hidden_from_list(self):
+        self.field.is_active = False
+        self.field.save(update_fields=["is_active"])
+        response = self.client.get(
+            f"/api/entity-fields/list/?entity_id={self.entity.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 0)
+
+    def test_update_creates_audit_log(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/update/",
+            {"name": "Mobile"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="field.updated",
+                resource="field",
+                object_id=str(self.field.id),
+            ).exists()
+        )
+
+    def test_deactivate_creates_audit_log(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/deactivate/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="field.deactivated",
+                resource="field",
+                object_id=str(self.field.id),
+            ).exists()
+        )
+
+
+class FieldManagementAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="fieldmanagement",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Field Management Business",
+            slug="field-management-business",
+            industry="retail",
+            country="India",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+
+        for code, action in [
+            ("entity.view", "view"),
+            ("entity.manage", "manage"),
+        ]:
+            permission = Permission.objects.create(
+                code=code,
+                name=code,
+                resource="entity",
+                action=action,
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+        )
+
+        self.field = self.entity.fields.create(
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            position=1,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_field_list(self):
+        response = self.client.get(
+            f"/api/entity-fields/list/?entity_id={self.entity.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+
+    def test_field_detail(self):
+        response = self.client.get(
+            f"/api/entity-fields/{self.field.id}/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["field"]["slug"], "phone")
+
+    def test_field_update(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/update/",
+            {"name": "Mobile", "required": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.field.refresh_from_db()
+        self.assertEqual(self.field.name, "Mobile")
+        self.assertTrue(self.field.required)
+
+    def test_field_deactivate(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/deactivate/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.field.refresh_from_db()
+        self.assertFalse(self.field.is_active)
+
+    def test_inactive_field_hidden_from_list(self):
+        self.field.is_active = False
+        self.field.save(update_fields=["is_active"])
+        response = self.client.get(
+            f"/api/entity-fields/list/?entity_id={self.entity.id}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 0)
+
+    def test_update_creates_audit_log(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/update/",
+            {"name": "Mobile"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="field.updated",
+                resource="field",
+                object_id=str(self.field.id),
+            ).exists()
+        )
+
+    def test_deactivate_creates_audit_log(self):
+        response = self.client.patch(
+            f"/api/entity-fields/{self.field.id}/deactivate/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="field.deactivated",
+                resource="field",
+                object_id=str(self.field.id),
+            ).exists()
+        )
+
+
+class EntityDeleteAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="entitydelete",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Entity Delete Business",
+            slug="entity-delete-business",
+            industry="retail",
+            country="India",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+
+        permission = Permission.objects.create(
+            code="entity.manage",
+            name="Manage Entities",
+            resource="entity",
+            action="manage",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Temporary Entity",
+            slug="temporary-entity",
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_entity_delete(self):
+        response = self.client.delete(
+            f"/api/entities/{self.entity.id}/delete/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            EntityDefinition.objects.filter(
+                id=self.entity.id
+            ).exists()
+        )
+
+    def test_entity_delete_audit_log(self):
+        entity_id = str(self.entity.id)
+
+        response = self.client.delete(
+            f"/api/entities/{entity_id}/delete/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="entity.deleted",
+                resource="entity",
+                object_id=entity_id,
+            ).exists()
+        )
+
+
+class DynamicFormAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="dynamicform",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Dynamic Form Business",
+            slug="dynamic-form-business",
+            industry="retail",
+            country="India",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+            is_system=True,
+        )
+
+        for code, action in [
+            ("entity.view", "view"),
+            ("entity.create", "create"),
+        ]:
+            permission = Permission.objects.create(
+                code=code,
+                name=code,
+                resource="entity",
+                action=action,
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+        )
+
+        self.name_field = self.entity.fields.create(
+            name="Name",
+            slug="name",
+            field_type="text",
+            required=True,
+            position=1,
+        )
+
+        self.phone_field = self.entity.fields.create(
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            position=2,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_dynamic_form_schema(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/form/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(
+            response.data["entity"]["slug"],
+            "customers",
+        )
+        self.assertEqual(len(response.data["fields"]), 2)
+        self.assertEqual(
+            response.data["fields"][0]["slug"],
+            "name",
+        )
+
+    def test_dynamic_form_submission_creates_record(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Kumar",
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(
+            response.data["record"]["data"]["name"],
+            "Rahul Kumar",
+        )
+
+    def test_dynamic_form_required_validation(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_dynamic_form_unknown_field_rejected(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Kumar",
+                "unknown": "test",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+class DynamicFormAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="dynamicform",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Dynamic Form Business",
+            slug="dynamic-form-business",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+        )
+
+        permission_data = {
+            "entity.view": {
+                "name": "View Entities",
+                "resource": "entity",
+                "action": "view",
+            },
+            "entity.create": {
+                "name": "Create Entities",
+                "resource": "entity",
+                "action": "create",
+            },
+        }
+
+        for code, defaults in permission_data.items():
+            permission, _ = Permission.objects.get_or_create(
+                code=code,
+                defaults=defaults,
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+            is_active=True,
+        )
+
+        self.name_field = FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Name",
+            slug="name",
+            field_type="text",
+            required=True,
+            position=1,
+            is_active=True,
+        )
+
+        self.phone_field = FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            required=False,
+            position=2,
+            is_active=True,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_dynamic_form_schema(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/form/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(
+            response.data["entity"]["slug"],
+            "customers",
+        )
+        self.assertEqual(len(response.data["fields"]), 2)
+        self.assertEqual(
+            response.data["fields"][0]["slug"],
+            "name",
+        )
+        self.assertEqual(
+            response.data["fields"][0]["required"],
+            True,
+        )
+
+    def test_dynamic_form_submission_creates_record(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Sharma",
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data["success"])
+
+        record = EntityRecord.objects.get(
+            id=response.data["record"]["id"]
+        )
+
+        self.assertEqual(
+            record.data["name"],
+            "Rahul Sharma",
+        )
+        self.assertEqual(
+            record.data["phone"],
+            "9876543210",
+        )
+
+    def test_dynamic_form_required_validation(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data["success"])
+        self.assertIn("Name", response.data["message"])
+
+    def test_dynamic_form_unknown_field_rejected(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Sharma",
+                "unknown_field": "test",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data["success"])
+        self.assertIn(
+            "Unknown field",
+            response.data["message"],
+        )
+
+class DynamicFormAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="dynamicform",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Dynamic Form Business",
+            slug="dynamic-form-business",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+        )
+
+        permission_data = {
+            "entity.view": {
+                "name": "View Entities",
+                "resource": "entity",
+                "action": "view",
+            },
+            "entity.create": {
+                "name": "Create Entities",
+                "resource": "entity",
+                "action": "create",
+            },
+        }
+
+        for code, defaults in permission_data.items():
+            permission, _ = Permission.objects.get_or_create(
+                code=code,
+                defaults=defaults,
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+            is_active=True,
+        )
+
+        self.name_field = FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Name",
+            slug="name",
+            field_type="text",
+            required=True,
+            position=1,
+            is_active=True,
+        )
+
+        self.phone_field = FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            required=False,
+            position=2,
+            is_active=True,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_dynamic_form_schema(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/form/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(
+            response.data["entity"]["slug"],
+            "customers",
+        )
+        self.assertEqual(len(response.data["fields"]), 2)
+        self.assertEqual(
+            response.data["fields"][0]["slug"],
+            "name",
+        )
+        self.assertEqual(
+            response.data["fields"][0]["required"],
+            True,
+        )
+
+    def test_dynamic_form_submission_creates_record(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Sharma",
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data["success"])
+
+        record = EntityRecord.objects.get(
+            id=response.data["record"]["id"]
+        )
+
+        self.assertEqual(
+            record.data["name"],
+            "Rahul Sharma",
+        )
+        self.assertEqual(
+            record.data["phone"],
+            "9876543210",
+        )
+
+    def test_dynamic_form_required_validation(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "phone": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data["success"])
+        self.assertIn("Name", response.data["message"])
+
+    def test_dynamic_form_unknown_field_rejected(self):
+        response = self.client.post(
+            f"/api/entities/{self.entity.id}/form/",
+            {
+                "name": "Rahul Sharma",
+                "unknown_field": "test",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.data["success"])
+        self.assertIn(
+            "Unknown field",
+            response.data["message"],
+        )
+
+
+class DynamicTableAPITest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username="dynamictable",
+            password="test-password-123",
+        )
+
+        self.business = Business.objects.create(
+            name="Dynamic Table Business",
+            slug="dynamic-table-business",
+        )
+
+        self.role = Role.objects.create(
+            business=self.business,
+            name="Owner",
+            slug="owner",
+        )
+
+        for code, name, resource, action in [
+            ("entity.view", "View Entities", "entity", "view"),
+        ]:
+            permission, _ = Permission.objects.get_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "resource": resource,
+                    "action": action,
+                },
+            )
+            RolePermission.objects.create(
+                role=self.role,
+                permission=permission,
+            )
+
+        Membership.objects.create(
+            user=self.user,
+            business=self.business,
+            role=self.role,
+            is_active=True,
+        )
+
+        self.entity = EntityDefinition.objects.create(
+            business=self.business,
+            name="Customers",
+            slug="customers",
+            is_active=True,
+        )
+
+        FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Name",
+            slug="name",
+            field_type="text",
+            required=True,
+            position=1,
+            is_active=True,
+        )
+
+        FieldDefinition.objects.create(
+            entity=self.entity,
+            name="Phone",
+            slug="phone",
+            field_type="text",
+            position=2,
+            is_active=True,
+        )
+
+        self.records = []
+
+        for name, phone in [
+            ("Rahul", "9000000001"),
+            ("Amit", "9000000002"),
+            ("Ravi", "9000000003"),
+        ]:
+            self.records.append(
+                EntityRecord.objects.create(
+                    entity=self.entity,
+                    data={
+                        "name": name,
+                        "phone": phone,
+                    },
+                    created_by=self.user,
+                )
+            )
+
+        self.deleted_record = EntityRecord.objects.create(
+            entity=self.entity,
+            data={
+                "name": "Deleted Customer",
+                "phone": "9999999999",
+            },
+            created_by=self.user,
+            is_deleted=True,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_table_schema_and_rows(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["success"])
+        self.assertEqual(
+            response.data["entity"]["slug"],
+            "customers",
+        )
+        self.assertEqual(len(response.data["columns"]), 2)
+        self.assertEqual(response.data["pagination"]["total"], 3)
+        self.assertEqual(len(response.data["rows"]), 3)
+
+        names = [
+            row["data"]["name"]
+            for row in response.data["rows"]
+        ]
+
+        self.assertNotIn("Deleted Customer", names)
+
+    def test_table_pagination(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/?page=1&page_size=2"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["pagination"]["page"],
+            1,
+        )
+        self.assertEqual(
+            response.data["pagination"]["page_size"],
+            2,
+        )
+        self.assertEqual(
+            response.data["pagination"]["total"],
+            3,
+        )
+        self.assertEqual(
+            response.data["pagination"]["total_pages"],
+            2,
+        )
+        self.assertEqual(len(response.data["rows"]), 2)
+
+    def test_table_search(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/?search=Rahul"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["pagination"]["total"],
+            1,
+        )
+        self.assertEqual(
+            response.data["rows"][0]["data"]["name"],
+            "Rahul",
+        )
+
+    def test_table_search_phone(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/?search=9000000002"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["pagination"]["total"],
+            1,
+        )
+        self.assertEqual(
+            response.data["rows"][0]["data"]["name"],
+            "Amit",
+        )
+
+    def test_table_sort(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/?sort=name"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        names = [
+            row["data"]["name"]
+            for row in response.data["rows"]
+        ]
+
+        self.assertEqual(
+            names,
+            ["Amit", "Rahul", "Ravi"],
+        )
+
+    def test_table_descending_sort(self):
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/?sort=-name"
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        names = [
+            row["data"]["name"]
+            for row in response.data["rows"]
+        ]
+
+        self.assertEqual(
+            names,
+            ["Ravi", "Rahul", "Amit"],
+        )
+
+    def test_table_requires_membership(self):
+        outsider = User.objects.create_user(
+            username="tableoutsider",
+            password="test-password-123",
+        )
+
+        self.client.force_authenticate(user=outsider)
+
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/"
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_table_requires_view_permission(self):
+        permissionless_user = User.objects.create_user(
+            username="tablepermissionless",
+            password="test-password-123",
+        )
+
+        role = Role.objects.create(
+            business=self.business,
+            name="No View",
+            slug="no-view",
+        )
+
+        Membership.objects.create(
+            user=permissionless_user,
+            business=self.business,
+            role=role,
+            is_active=True,
+        )
+
+        self.client.force_authenticate(
+            user=permissionless_user
+        )
+
+        response = self.client.get(
+            f"/api/entities/{self.entity.id}/table/"
+        )
+
+        self.assertEqual(response.status_code, 403)

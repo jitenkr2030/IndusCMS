@@ -199,3 +199,117 @@ def update_entity_for_business(
     )
 
     return entity
+
+
+@transaction.atomic
+def deactivate_entity_for_business(
+    *,
+    user,
+    entity,
+    ip_address=None,
+):
+    """
+    Deactivate an existing dynamic entity.
+
+    Deactivation does not delete the entity or its records.
+    """
+
+    if not user or not user.is_authenticated:
+        raise ValueError("Authenticated user is required.")
+
+    business = entity.business
+
+    membership = get_membership(
+        user,
+        business,
+    )
+
+    if not membership:
+        raise PermissionError(
+            "You are not an active member of this business."
+        )
+
+    if not user_can(
+        user,
+        business,
+        "entity.manage",
+    ):
+        raise PermissionError(
+            "You do not have permission to deactivate entities."
+        )
+
+    if not entity.is_active:
+        raise ValueError(
+            "Entity is already inactive."
+        )
+
+    entity.is_active = False
+
+    entity.save(
+        update_fields=[
+            "is_active",
+            "updated_at",
+        ]
+    )
+
+    log_action(
+        business=business,
+        user=user,
+        action="entity.deactivated",
+        resource="entity",
+        object_id=entity.pk,
+        ip_address=ip_address,
+        metadata={
+            "name": entity.name,
+            "slug": entity.slug,
+        },
+    )
+
+    return entity
+
+
+@transaction.atomic
+def delete_entity_for_business(
+    *,
+    user,
+    entity,
+    ip_address=None,
+):
+    if not user or not user.is_authenticated:
+        raise ValueError("Authenticated user is required.")
+
+    business = entity.business
+
+    membership = get_membership(user, business)
+
+    if not membership:
+        raise PermissionError(
+            "You are not an active member of this business."
+        )
+
+    if not user_can(user, business, "entity.manage"):
+        raise PermissionError(
+            "You do not have permission to delete entities."
+        )
+
+    if entity.records.filter(is_deleted=False).exists():
+        raise ValueError(
+            "Entity cannot be deleted while active records exist."
+        )
+
+    log_action(
+        business=business,
+        user=user,
+        action="entity.deleted",
+        resource="entity",
+        object_id=entity.pk,
+        ip_address=ip_address,
+        metadata={
+            "name": entity.name,
+            "slug": entity.slug,
+        },
+    )
+
+    entity.delete()
+
+    return True

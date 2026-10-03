@@ -26,11 +26,13 @@ records, permissions, workflows, APIs and industry templates.
 
 ## Project Status
 
-**Current phase: Phase 3 — Dynamic Entity Engine**
+**Phase 3 — Dynamic Entity Engine: COMPLETE**
 
-Phase 1 and Phase 2 are complete.
+Phase 1, Phase 2 and Phase 3 are complete and tested.
 
-Phase 3 is actively under development.
+Current test status:
+
+**92 tests passed**
 
 
 ## Platform Architecture
@@ -190,29 +192,6 @@ Completed:
 
 ### Phase 3 — Dynamic Entity Engine
 
-Current status:
-
-- Entity model: Complete
-- Field definition model: Complete
-- Entity record model: Complete
-- Entity creation API: Complete
-- Entity list API: Complete
-- Entity detail API: Complete
-- Field creation API: Complete
-- Dynamic record CRUD API: Complete
-- Dynamic validation: Complete
-- Permission checks: Complete
-- Audit logging: Complete
-- Entity update API: In progress
-- Entity update tests: Pending
-
-The entity update feature must pass its dedicated tests before
-Phase 3.7C is marked complete.
-
-## Roadmap
-
-### Phase 3 — Dynamic Entity Engine
-
 - [x] Entity definitions
 - [x] Field definitions
 - [x] Dynamic records
@@ -221,14 +200,19 @@ Phase 3.7C is marked complete.
 - [x] Soft deletion
 - [x] Entity listing
 - [x] Entity detail
+- [x] Entity update
+- [x] Entity deactivation
+- [x] Entity deletion protection
 - [x] Permission integration
 - [x] Audit logging
-- [ ] Entity update API
-- [ ] Entity update tests
-- [ ] Entity deactivation
-- [ ] Advanced entity filtering
-- [ ] Entity search
-- [ ] Entity relationships
+- [x] Dynamic forms
+- [x] Dynamic tables
+- [x] Search
+- [x] Sorting
+- [x] Pagination
+- [x] Entity relationships
+- [x] Relationship validation
+- [x] Relationship options
 
 ### Phase 4 — Business Application Engine
 

@@ -407,6 +407,70 @@ class FieldDefinition(models.Model):
         return f"{self.entity.name} - {self.name}"
 
 
+
+class RelationshipDefinition(models.Model):
+    RELATIONSHIP_TYPES = (
+        ("many_to_one", "Many to One"),
+        ("one_to_one", "One to One"),
+        ("many_to_many", "Many to Many"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.CASCADE,
+        related_name="relationships",
+    )
+    source_entity = models.ForeignKey(
+        EntityDefinition,
+        on_delete=models.CASCADE,
+        related_name="outgoing_relationships",
+    )
+    target_entity = models.ForeignKey(
+        EntityDefinition,
+        on_delete=models.CASCADE,
+        related_name="incoming_relationships",
+    )
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=150)
+    relationship_type = models.CharField(
+        max_length=30,
+        choices=RELATIONSHIP_TYPES,
+        default="many_to_one",
+    )
+    required = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("source_entity", "slug"),
+                name="unique_source_relationship_slug",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("business", "is_active"),
+            ),
+            models.Index(
+                fields=("source_entity", "is_active"),
+            ),
+        ]
+        ordering = ("name",)
+
+    def __str__(self):
+        return (
+            f"{self.source_entity.name} -> "
+            f"{self.target_entity.name}: {self.name}"
+        )
+
+
 class EntityRecord(models.Model):
     """A record stored against a configurable entity."""
 

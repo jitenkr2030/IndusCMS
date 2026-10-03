@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
-from core.models import EntityRecord
+from core.models import EntityRecord, RelationshipDefinition
 from core.services.audit import log_action
 from core.services.permissions import get_membership, user_can
 
@@ -23,6 +23,55 @@ FIELD_TYPES = {
     "choice",
     "json",
 }
+
+
+def validate_relationship_value(relationship, value):
+    if value in (None, ""):
+        if relationship.required:
+            raise ValueError(
+                f"Relationship '{relationship.name}' is required."
+            )
+        return None
+
+    if relationship.relationship_type not in {
+        "many_to_one",
+        "one_to_one",
+    }:
+        raise ValueError(
+            "This relationship type is not yet supported for record values."
+        )
+
+    if isinstance(value, (list, tuple, dict)):
+        raise ValueError(
+            f"Relationship '{relationship.name}' expects a record ID."
+        )
+
+    record_id = str(value)
+
+    try:
+        target_record = relationship.target_entity.records.get(
+            id=record_id,
+            is_deleted=False,
+        )
+    except (EntityRecord.DoesNotExist, ValueError):
+        raise ValueError(
+            f"Related record for '{relationship.name}' was not found."
+        )
+
+    if relationship.relationship_type == "one_to_one":
+        existing = EntityRecord.objects.filter(
+            entity=relationship.source_entity,
+            is_deleted=False,
+            data__contains={relationship.slug: record_id},
+        ).exists()
+
+        if existing:
+            raise ValueError(
+                f"Relationship '{relationship.name}' already has "
+                "another record linked to this target."
+            )
+
+    return str(target_record.id)
 
 
 def validate_record_data(entity, data):
