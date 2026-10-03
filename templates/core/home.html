@@ -4,32 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IndusCMS — Industry-first CMS & Business Platform</title>
-
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
             background: #f5f7fb;
             color: #172033;
         }
-
-        .container {
-            max-width: 1150px;
-            margin: auto;
-            padding: 30px 20px 60px;
-        }
-
+        .container { max-width: 1150px; margin: auto; padding: 30px 20px 60px; }
         .hero {
             background: white;
             padding: 70px 55px;
             border-radius: 24px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 40px rgba(0,0,0,.08);
         }
-
         .badge {
             display: inline-block;
             padding: 8px 14px;
@@ -40,76 +29,23 @@
             font-weight: bold;
             margin-bottom: 20px;
         }
-
-        h1 {
-            font-size: clamp(42px, 7vw, 68px);
-            line-height: 1;
-            margin: 0 0 18px;
-            letter-spacing: -2px;
-        }
-
-        .tagline {
-            font-size: 24px;
-            line-height: 1.5;
-            color: #4b5563;
-            max-width: 800px;
-        }
-
-        .description {
-            font-size: 17px;
-            line-height: 1.7;
-            color: #6b7280;
-            max-width: 800px;
-            margin-top: 20px;
-        }
-
-        .section {
-            margin-top: 45px;
-        }
-
-        .section h2 {
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 18px;
-        }
-
-        .card {
-            background: #f8fafc;
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .card h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        .card p {
-            margin: 0;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-
+        h1 { font-size: clamp(42px,7vw,68px); line-height: 1; margin: 0 0 18px; letter-spacing: -2px; }
+        .tagline { font-size: 24px; line-height: 1.5; color: #4b5563; max-width: 820px; }
+        .description { font-size: 17px; line-height: 1.7; color: #6b7280; max-width: 820px; margin-top: 20px; }
+        .section { margin-top: 45px; }
+        .section h2 { font-size: 28px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 18px; }
+        .card { background: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid #e5e7eb; }
+        .card h3 { margin-top: 0; margin-bottom: 10px; }
+        .card p { margin: 0; color: #6b7280; line-height: 1.6; }
         .status {
             margin-top: 35px;
-            padding: 20px 24px;
+            padding: 24px;
             border-radius: 14px;
             background: #f8fafc;
             border: 1px solid #e5e7eb;
-            line-height: 1.6;
+            line-height: 1.7;
         }
-
-        .status strong {
-            display: block;
-            margin-bottom: 8px;
-        }
-
         .architecture {
             margin-top: 20px;
             padding: 25px;
@@ -118,194 +54,113 @@
             border-radius: 16px;
             overflow-x: auto;
         }
-
-        .architecture pre {
-            margin: 0;
-            font-family: monospace;
-            line-height: 1.7;
-        }
-
-        .footer {
-            text-align: center;
-            color: #6b7280;
-            margin-top: 40px;
-            font-size: 14px;
-        }
-
-        @media (max-width: 700px) {
-            .hero {
-                padding: 40px 25px;
-            }
-
-            .tagline {
-                font-size: 20px;
-            }
-
-            .container {
-                padding-left: 15px;
-                padding-right: 15px;
-            }
+        .architecture pre { margin: 0; font-family: monospace; line-height: 1.7; }
+        .footer { text-align: center; color: #6b7280; margin-top: 40px; font-size: 14px; }
+        @media (max-width:700px) {
+            .hero { padding: 40px 25px; }
+            .tagline { font-size: 20px; }
+            .container { padding-left: 15px; padding-right: 15px; }
         }
     </style>
 </head>
-
 <body>
-
 <div class="container">
+<section class="hero">
+    <div class="badge">Industry-first Business Platform</div>
+    <h1>IndusCMS</h1>
+    <div class="tagline">
+        Build industry-specific business applications on one reusable platform.
+    </div>
+    <div class="description">
+        IndusCMS combines CMS capabilities, business infrastructure, dynamic entities,
+        relationships and workflow automation into a reusable foundation for
+        industry-specific applications.
+    </div>
 
-    <section class="hero">
-
-        <div class="badge">
-            Industry-first Business Platform
-        </div>
-
-        <h1>IndusCMS</h1>
-
-        <div class="tagline">
-            Build industry-specific business applications on one reusable platform.
-        </div>
-
-        <div class="description">
-            IndusCMS combines CMS capabilities, business engines and a
-            dynamic entity system to create configurable applications for
-            different industries.
-        </div>
-
-        <div class="section">
-
-            <h2>Platform Engines</h2>
-
-            <div class="grid">
-
-                <div class="card">
-                    <h3>CMS Engine</h3>
-                    <p>
-                        Pages, menus, media and themes for managing business content.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Business Engine</h3>
-                    <p>
-                        Businesses, roles, permissions, memberships,
-                        settings and audit logging.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Dynamic Entity Engine</h3>
-                    <p>
-                        Define custom business entities and fields without
-                        creating a new Django model for every use case.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Industry Templates</h3>
-                    <p>
-                        Future templates will combine entities, workflows,
-                        dashboards and permissions into complete applications.
-                    </p>
-                </div>
-
+    <div class="section">
+        <h2>Platform Engines</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Business Engine</h3>
+                <p>Businesses, memberships, roles, permissions, settings and audit logging.</p>
             </div>
-
-        </div>
-
-        <div class="section">
-
-            <h2>Dynamic Business Data</h2>
-
-            <div class="grid">
-
-                <div class="card">
-                    <h3>Entities</h3>
-                    <p>
-                        Customer, Product, Vehicle, Student, Booking,
-                        Property and other configurable business objects.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Fields</h3>
-                    <p>
-                        Text, number, decimal, boolean, date, datetime,
-                        email, URL, choice and JSON field types.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Records</h3>
-                    <p>
-                        Dynamic records with validation, pagination,
-                        update and soft-delete support.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Relationships</h3>
-                    <p>
-                        Connect dynamic entities using relationship definitions,
-                        validated record links and relationship option APIs.
-                    </p>
-                </div>
-
-                <div class="card">
-                    <h3>Security</h3>
-                    <p>
-                        Business membership, role-based permissions and
-                        audit logging are built into the platform foundation.
-                    </p>
-                </div>
-
+            <div class="card">
+                <h3>Dynamic Entity Engine</h3>
+                <p>Create configurable entities, fields and records without a new Django model for every business object.</p>
             </div>
-
+            <div class="card">
+                <h3>Workflow Engine</h3>
+                <p>Define steps, transitions, instances and a persistent workflow history timeline.</p>
+            </div>
+            <div class="card">
+                <h3>Industry Templates</h3>
+                <p>Future templates will combine entities, workflows, dashboards, reports and permissions into complete applications.</p>
+            </div>
         </div>
+    </div>
 
-        <div class="section">
+    <div class="section">
+        <h2>What Is Working Now?</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Dynamic Data</h3>
+                <p>Entities, fields, records, validation, forms, tables, search, sorting and pagination.</p>
+            </div>
+            <div class="card">
+                <h3>Relationships</h3>
+                <p>Connect business entities with validated record relationships and target-record options.</p>
+            </div>
+            <div class="card">
+                <h3>Workflows</h3>
+                <p>Workflow definitions, steps, transitions, instances, completion and history.</p>
+            </div>
+            <div class="card">
+                <h3>Security</h3>
+                <p>Business membership, role-based permissions and audit events across the platform.</p>
+            </div>
+        </div>
+    </div>
 
-            <h2>Architecture</h2>
-
-            <div class="architecture">
+    <div class="section">
+        <h2>Architecture</h2>
+        <div class="architecture">
 <pre>
                          IndusCMS
                             |
-             +--------------+--------------+
-             |              |              |
-            CMS         Business       Dynamic
-           Engine        Engines        Entities
-             |              |              |
-             +--------------+--------------+
+        +-------------------+-------------------+
+        |                   |                   |
+       CMS              Business          Dynamic Entities
+     Engine              Engine                 |
+        |                   |              +-----+-----+
+        |                   |            Fields     Records
+        +-------------------+-------------------+
                             |
-                     Future Engines
+                     Workflow Engine
                             |
-                 Workflow | API | Plugins
+              Conditions | Transitions | Actions
+                            |
+                     API / Plugins
                             |
                   Industry Templates
 </pre>
-            </div>
-
         </div>
-
-        <div class="status">
-            <strong>Phase 3 — Dynamic Entity Engine: COMPLETE</strong>
-            The dynamic business data foundation is now implemented.
-            <br><br>
-            Entities, fields, records, dynamic forms, dynamic tables,
-            search, sorting, pagination, relationships, permissions,
-            soft deletion and audit logging are available.
-            <br><br>
-            <strong>Test Status: 92 tests passed</strong>
-        </div>
-
-    </section>
-
-    <div class="footer">
-        IndusCMS · Industry-first CMS & Business Platform
-        {% if version %} · v{{ version }}{% endif %}
     </div>
 
-</div>
+    <div class="status">
+        <strong>Phase 4.2 — Workflow History & Management: COMPLETE</strong>
+        IndusCMS currently has a tested foundation for dynamic business data
+        and workflow-driven applications.
+        <br><br>
+        <strong>110 / 110 tests passing</strong>
+        <br>
+        Next milestone: <strong>Phase 4.3 — Workflow Conditions & Automation</strong>
+    </div>
+</section>
 
+<div class="footer">
+    IndusCMS · Industry-first CMS & Business Platform
+    {% if version %} · v{{ version }}{% endif %}
+</div>
+</div>
 </body>
 </html>
