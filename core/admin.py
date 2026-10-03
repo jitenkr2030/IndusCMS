@@ -297,3 +297,20 @@ class EntityRecordAdmin(admin.ModelAdmin):
     ordering = (
         "-created_at",
     )
+
+from core.models import (
+    WorkflowDefinition,
+    WorkflowStep,
+    WorkflowTransition,
+    WorkflowInstance,
+)
+
+admin.site.register(WorkflowDefinition)
+admin.site.register(WorkflowStep)
+admin.site.register(WorkflowTransition)
+admin.site.register(WorkflowInstance)
+
+
+from core.models import WorkflowHistory
+
+admin.site.register(WorkflowHistory)

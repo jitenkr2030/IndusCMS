@@ -512,3 +512,256 @@ class EntityRecord(models.Model):
 
     def __str__(self):
         return f"{self.entity.name} record ({self.pk})"
+
+# ============================================================
+# PHASE 4 — WORKFLOW ENGINE
+# ============================================================
+
+class WorkflowDefinition(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.CASCADE,
+        related_name="workflows",
+    )
+    entity = models.ForeignKey(
+        EntityDefinition,
+        on_delete=models.CASCADE,
+        related_name="workflows",
+    )
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=150)
+    description = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("business", "slug"),
+                name="unique_business_workflow_slug",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("business", "is_active")),
+            models.Index(fields=("entity", "is_active")),
+        ]
+        ordering = ("name",)
+
+    def __str__(self):
+        return f"{self.business.name} - {self.name}"
+
+
+class WorkflowStep(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    workflow = models.ForeignKey(
+        WorkflowDefinition,
+        on_delete=models.CASCADE,
+        related_name="steps",
+    )
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=150)
+    description = models.TextField(blank=True, default="")
+    position = models.PositiveIntegerField(default=0)
+    is_initial = models.BooleanField(default=False)
+    is_final = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("workflow", "slug"),
+                name="unique_workflow_step_slug",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("workflow", "is_active")),
+        ]
+        ordering = ("position", "name")
+
+    def __str__(self):
+        return f"{self.workflow.name} - {self.name}"
+
+
+class WorkflowTransition(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    workflow = models.ForeignKey(
+        WorkflowDefinition,
+        on_delete=models.CASCADE,
+        related_name="transitions",
+    )
+    from_step = models.ForeignKey(
+        WorkflowStep,
+        on_delete=models.CASCADE,
+        related_name="outgoing_transitions",
+    )
+    to_step = models.ForeignKey(
+        WorkflowStep,
+        on_delete=models.CASCADE,
+        related_name="incoming_transitions",
+    )
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=150)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("workflow", "slug"),
+                name="unique_workflow_transition_slug",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("workflow", "is_active")),
+            models.Index(fields=("from_step", "is_active")),
+        ]
+        ordering = ("name",)
+
+    def __str__(self):
+        return (
+            f"{self.workflow.name}: "
+            f"{self.from_step.name} -> {self.to_step.name}"
+        )
+
+
+class WorkflowInstance(models.Model):
+    STATUS_CHOICES = (
+        ("active", "Active"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    workflow = models.ForeignKey(
+        WorkflowDefinition,
+        on_delete=models.CASCADE,
+        related_name="instances",
+    )
+    record = models.ForeignKey(
+        EntityRecord,
+        on_delete=models.CASCADE,
+        related_name="workflow_instances",
+    )
+    current_step = models.ForeignKey(
+        WorkflowStep,
+        on_delete=models.PROTECT,
+        related_name="current_instances",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="active",
+    )
+    started_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="started_workflow_instances",
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("workflow", "record"),
+                name="unique_workflow_record_instance",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("workflow", "status")),
+            models.Index(fields=("record", "status")),
+        ]
+        ordering = ("-started_at",)
+
+    def __str__(self):
+        return (
+            f"{self.workflow.name} / "
+            f"{self.record_id} / "
+            f"{self.current_step.name}"
+        )
+
+
+class WorkflowHistory(models.Model):
+    """Immutable-by-convention timeline for a workflow instance."""
+
+    ACTION_CHOICES = (
+        ("started", "Started"),
+        ("transitioned", "Transitioned"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    instance = models.ForeignKey(
+        "WorkflowInstance",
+        on_delete=models.CASCADE,
+        related_name="history",
+    )
+    transition = models.ForeignKey(
+        "WorkflowTransition",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="history_entries",
+    )
+    from_step = models.ForeignKey(
+        "WorkflowStep",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="history_from_entries",
+    )
+    to_step = models.ForeignKey(
+        "WorkflowStep",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="history_to_entries",
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    performed_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="workflow_history_entries",
+    )
+    note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")
+        indexes = [
+            models.Index(fields=("instance", "created_at")),
+        ]
+
+    def __str__(self):
+        return f"{self.instance_id}: {self.action}"
