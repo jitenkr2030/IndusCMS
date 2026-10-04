@@ -4,13 +4,17 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from core.models import (
+    AuditLog,
     Business,
     EntityDefinition,
+    EntityRecord,
     Membership,
     Permission,
     Role,
     RolePermission,
     WorkflowDefinition,
+    WorkflowHistory,
+    WorkflowInstance,
     WorkflowStep,
     WorkflowTransition,
     WorkflowTrigger,
@@ -90,6 +94,461 @@ class WorkflowTriggerTests(TestCase):
             name="On Invoice Created",
             event_type="record_created",
             config={"source": "test"},
+        )
+
+    def test_record_created_starts_workflow(self):
+        from core.services.record import create_record_for_entity
+
+        trigger = self.create_trigger()
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        instance = WorkflowInstance.objects.get(
+            workflow=self.workflow,
+            record=record,
+        )
+
+        self.assertEqual(
+            instance.current_step,
+            self.step,
+        )
+        self.assertEqual(
+            instance.status,
+            "active",
+        )
+
+        history = WorkflowHistory.objects.get(
+            instance=instance,
+            action="started",
+        )
+
+        self.assertEqual(
+            history.to_step,
+            self.step,
+        )
+        self.assertEqual(
+            history.performed_by,
+            self.user,
+        )
+
+        audit = AuditLog.objects.get(
+            business=self.business,
+            action="workflow.trigger.fired",
+            object_id=str(record.id),
+        )
+
+        self.assertEqual(
+            audit.user,
+            self.user,
+        )
+        self.assertEqual(
+            audit.metadata["trigger_id"],
+            str(trigger.id),
+        )
+
+    def test_record_created_does_not_duplicate_workflow_instance(self):
+        from core.services.record import create_record_for_entity
+
+        self.create_trigger()
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        self.assertEqual(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).count(),
+            1,
+        )
+
+        from core.services.workflow_event import dispatch_record_event
+
+        summary = dispatch_record_event(
+            record,
+            "record_created",
+            user=self.user,
+        )
+
+        self.assertEqual(
+            summary["started"],
+            0,
+        )
+        self.assertEqual(
+            summary["skipped"],
+            1,
+        )
+
+        self.assertEqual(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).count(),
+            1,
+        )
+
+    def test_inactive_trigger_does_not_start_workflow(self):
+        from core.services.record import create_record_for_entity
+
+        trigger = self.create_trigger()
+        trigger.is_active = False
+        trigger.save(update_fields=["is_active"])
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        self.assertFalse(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).exists()
+        )
+
+        self.assertFalse(
+            AuditLog.objects.filter(
+                business=self.business,
+                action="workflow.trigger.fired",
+                object_id=str(record.id),
+            ).exists()
+        )
+
+    def test_trigger_config_field_equals_condition(self):
+        from core.services.record import create_record_for_entity
+        from core.services.workflow_event import dispatch_record_event
+
+        trigger = WorkflowTrigger.objects.create(
+            workflow=self.workflow,
+            name="Approved Invoice Trigger",
+            event_type="record_created",
+            config={
+                "field": "status",
+                "equals": "approved",
+            },
+        )
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        self.assertFalse(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).exists()
+        )
+
+        record.data = {
+            "status": "approved",
+        }
+
+        summary = dispatch_record_event(
+            record,
+            "record_created",
+            user=self.user,
+        )
+
+        self.assertEqual(
+            summary["started"],
+            1,
+        )
+
+        self.assertTrue(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).exists()
+        )
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                business=self.business,
+                action="workflow.trigger.fired",
+                object_id=str(record.id),
+                metadata__trigger_id=str(trigger.id),
+            ).exists()
+        )
+
+    def test_record_updated_starts_workflow(self):
+        from core.services.record import create_record_for_entity
+        from core.services.workflow_event import dispatch_record_event
+
+        trigger = WorkflowTrigger.objects.create(
+            workflow=self.workflow,
+            name="On Invoice Updated",
+            event_type="record_updated",
+        )
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        self.assertFalse(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).exists()
+        )
+
+        summary = dispatch_record_event(
+            record,
+            "record_updated",
+            user=self.user,
+        )
+
+        self.assertEqual(
+            summary["started"],
+            1,
+        )
+
+        instance = WorkflowInstance.objects.get(
+            workflow=self.workflow,
+            record=record,
+        )
+
+        self.assertEqual(
+            instance.current_step,
+            self.step,
+        )
+
+        self.assertTrue(
+            WorkflowHistory.objects.filter(
+                instance=instance,
+                action="started",
+                performed_by=self.user,
+            ).exists()
+        )
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                business=self.business,
+                action="workflow.trigger.fired",
+                object_id=str(record.id),
+                metadata__trigger_id=str(trigger.id),
+            ).exists()
+        )
+
+    def test_record_deleted_starts_workflow(self):
+        from core.services.record import create_record_for_entity
+        from core.services.workflow_event import dispatch_record_event
+
+        trigger = WorkflowTrigger.objects.create(
+            workflow=self.workflow,
+            name="On Invoice Deleted",
+            event_type="record_deleted",
+        )
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        summary = dispatch_record_event(
+            record,
+            "record_deleted",
+            user=self.user,
+        )
+
+        self.assertEqual(
+            summary["started"],
+            1,
+        )
+
+        instance = WorkflowInstance.objects.get(
+            workflow=self.workflow,
+            record=record,
+        )
+
+        self.assertEqual(
+            instance.current_step,
+            self.step,
+        )
+
+        self.assertTrue(
+            WorkflowHistory.objects.filter(
+                instance=instance,
+                action="started",
+                performed_by=self.user,
+            ).exists()
+        )
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                business=self.business,
+                action="workflow.trigger.fired",
+                object_id=str(record.id),
+                metadata__trigger_id=str(trigger.id),
+            ).exists()
+        )
+
+    def test_broken_trigger_does_not_block_valid_trigger(self):
+        from core.services.record import create_record_for_entity
+        from core.services.workflow_event import dispatch_record_event
+
+        broken_workflow = WorkflowDefinition.objects.create(
+            business=self.business,
+            entity=self.entity,
+            name="Broken Workflow",
+            slug="broken-workflow",
+        )
+
+        broken_trigger = WorkflowTrigger.objects.create(
+            workflow=broken_workflow,
+            name="Broken Trigger",
+            event_type="record_created",
+        )
+
+        WorkflowTrigger.objects.create(
+            workflow=self.workflow,
+            name="Valid Trigger",
+            event_type="record_created",
+        )
+
+        permission = Permission.objects.create(
+            code="entity.create",
+            name="entity.create",
+            resource="entity",
+            action="create",
+        )
+
+        RolePermission.objects.create(
+            role=self.role,
+            permission=permission,
+        )
+
+        with self.captureOnCommitCallbacks(execute=False):
+            record = create_record_for_entity(
+                user=self.user,
+                entity=self.entity,
+                data={},
+            )
+
+        self.assertFalse(
+            WorkflowInstance.objects.filter(
+                record=record,
+            ).exists()
+        )
+
+        summary = dispatch_record_event(
+            record,
+            "record_created",
+            user=self.user,
+        )
+
+        self.assertEqual(
+            summary["failed"],
+            1,
+        )
+
+        self.assertEqual(
+            summary["started"],
+            1,
+        )
+
+        self.assertTrue(
+            WorkflowInstance.objects.filter(
+                workflow=self.workflow,
+                record=record,
+            ).exists()
+        )
+
+        self.assertTrue(
+            any(
+                error["trigger_id"] == str(broken_trigger.id)
+                for error in summary["errors"]
+            )
         )
 
     def test_create_trigger_api(self):
