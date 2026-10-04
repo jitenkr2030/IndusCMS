@@ -12,6 +12,7 @@ from core.models import (
 from core.services.audit import log_action
 from core.services.permissions import get_membership, user_can
 from core.services.workflow_condition import evaluate_transition_conditions
+from core.services.workflow_action import execute_transition_actions
 
 
 
@@ -375,6 +376,13 @@ def transition_workflow_instance(
         action="completed" if new_step.is_final else "transitioned",
         performed_by=user,
         note=f"Transition: {transition.name}",
+    )
+
+    execute_transition_actions(
+        transition=transition,
+        instance=instance,
+        user=user,
+        ip_address=ip_address,
     )
 
     log_action(

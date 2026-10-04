@@ -20,6 +20,11 @@ from core.api.views import (
 )
 
 
+from core.api.workflow_action_views import (
+    WorkflowActionCreateAPIView,
+    WorkflowActionListAPIView,
+)
+
 urlpatterns = [
     path(
         "entities/<uuid:entity_id>/table/",
@@ -222,4 +227,18 @@ path(
     WorkflowConditionListAPIView.as_view(),
     name="workflow-condition-list",
 ),
+]
+
+
+urlpatterns += [
+    path(
+        "workflow-actions/",
+        WorkflowActionCreateAPIView.as_view(),
+        name="workflow-action-create",
+    ),
+    path(
+        "workflow-actions/list/",
+        WorkflowActionListAPIView.as_view(),
+        name="workflow-action-list",
+    ),
 ]

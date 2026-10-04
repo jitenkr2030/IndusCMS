@@ -831,3 +831,52 @@ class WorkflowCondition(models.Model):
             f"{self.transition.name}: "
             f"{self.field_slug} {self.operator}"
         )
+
+
+class WorkflowAction(models.Model):
+    ACTION_TYPES = (
+        ("audit", "Audit"),
+        ("notification", "Notification"),
+        ("webhook", "Webhook"),
+        ("update_record", "Update Record"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    transition = models.ForeignKey(
+        WorkflowTransition,
+        on_delete=models.CASCADE,
+        related_name="actions",
+    )
+
+    name = models.CharField(max_length=150)
+    action_type = models.CharField(
+        max_length=40,
+        choices=ACTION_TYPES,
+    )
+
+    config = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    position = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("position", "created_at")
+        indexes = [
+            models.Index(
+                fields=("transition", "is_active"),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.transition.name}: {self.name}"
