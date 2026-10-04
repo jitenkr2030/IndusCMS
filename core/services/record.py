@@ -348,6 +348,8 @@ def create_record_for_entity(
         },
     )
 
+    from core.services.workflow_event import schedule_record_event
+    schedule_record_event(record, "record_created", user=user)
     return record
 
 
@@ -425,6 +427,8 @@ def update_record_for_entity(
         },
     )
 
+    from core.services.workflow_event import schedule_record_event
+    schedule_record_event(record, "record_updated", user=user)
     return record
 
 
@@ -494,4 +498,6 @@ def delete_record_for_entity(
         },
     )
 
+    from core.services.workflow_event import schedule_record_event
+    schedule_record_event(record, "record_deleted", user=user)
     return record
