@@ -880,3 +880,54 @@ class WorkflowAction(models.Model):
 
     def __str__(self):
         return f"{self.transition.name}: {self.name}"
+
+
+class WorkflowTrigger(models.Model):
+    EVENT_TYPES = (
+        ("record_created", "Record Created"),
+        ("record_updated", "Record Updated"),
+        ("record_deleted", "Record Deleted"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    workflow = models.ForeignKey(
+        WorkflowDefinition,
+        on_delete=models.CASCADE,
+        related_name="triggers",
+    )
+
+    name = models.CharField(max_length=150)
+
+    event_type = models.CharField(
+        max_length=40,
+        choices=EVENT_TYPES,
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    config = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name",)
+        indexes = [
+            models.Index(
+                fields=("workflow", "is_active"),
+            ),
+            models.Index(
+                fields=("event_type", "is_active"),
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.workflow.name}: {self.name}"

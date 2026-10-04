@@ -32,7 +32,41 @@ from core.api.workflow_action_views import (
     WorkflowActionListAPIView,
 )
 
+from core.api.workflow_trigger_views import (
+    WorkflowTriggerCreateAPIView,
+    WorkflowTriggerListAPIView,
+    WorkflowTriggerUpdateAPIView,
+    WorkflowTriggerDeactivateAPIView,
+    WorkflowTriggerDeleteAPIView,
+)
+
 urlpatterns = [
+
+    path(
+        "workflow-triggers/",
+        WorkflowTriggerCreateAPIView.as_view(),
+        name="workflow-trigger-create",
+    ),
+    path(
+        "workflow-triggers/list/",
+        WorkflowTriggerListAPIView.as_view(),
+        name="workflow-trigger-list",
+    ),
+    path(
+        "workflow-triggers/<uuid:trigger_id>/update/",
+        WorkflowTriggerUpdateAPIView.as_view(),
+        name="workflow-trigger-update",
+    ),
+    path(
+        "workflow-triggers/<uuid:trigger_id>/deactivate/",
+        WorkflowTriggerDeactivateAPIView.as_view(),
+        name="workflow-trigger-deactivate",
+    ),
+    path(
+        "workflow-triggers/<uuid:trigger_id>/delete/",
+        WorkflowTriggerDeleteAPIView.as_view(),
+        name="workflow-trigger-delete",
+    ),
     path(
         "entities/<uuid:entity_id>/table/",
         EntityDynamicTableAPIView.as_view(),

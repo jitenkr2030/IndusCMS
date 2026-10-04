@@ -303,6 +303,7 @@ from core.models import (
     WorkflowStep,
     WorkflowTransition,
     WorkflowInstance,
+    WorkflowTrigger,
 )
 
 admin.site.register(WorkflowDefinition)
@@ -314,3 +315,22 @@ admin.site.register(WorkflowInstance)
 from core.models import WorkflowHistory
 
 admin.site.register(WorkflowHistory)
+
+
+@admin.register(WorkflowTrigger)
+class WorkflowTriggerAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "workflow",
+        "event_type",
+        "is_active",
+        "created_at",
+    )
+    list_filter = (
+        "event_type",
+        "is_active",
+    )
+    search_fields = (
+        "name",
+        "workflow__name",
+    )
