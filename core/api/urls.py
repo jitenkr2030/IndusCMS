@@ -20,7 +20,7 @@ from core.api.views import (
 )
 
 
-from core.api.workflow_action_views import (
+from core.api.workflow_action_management_views import (\n    WorkflowActionUpdateAPIView,\n    WorkflowActionDeactivateAPIView,\n    WorkflowActionDeleteAPIView,\n    WorkflowActionReorderAPIView,\n)\n\nfrom core.api.workflow_action_views import (
     WorkflowActionCreateAPIView,
     WorkflowActionListAPIView,
 )
@@ -175,7 +175,7 @@ from core.api.workflow_management_views import (
     WorkflowInstanceHistoryAPIView,
 )
 
-from core.api.workflow_condition_views import (
+from core.api.workflow_condition_management_views import (\n    WorkflowConditionUpdateAPIView,\n    WorkflowConditionDeactivateAPIView,\n    WorkflowConditionDeleteAPIView,\n)\n\nfrom core.api.workflow_condition_views import (
     WorkflowConditionCreateAPIView,
     WorkflowConditionListAPIView,
 )
@@ -242,3 +242,4 @@ urlpatterns += [
         name="workflow-action-list",
     ),
 ]
+\n\nurlpatterns += [\n    path("workflow-conditions/<uuid:condition_id>/update/", WorkflowConditionUpdateAPIView.as_view(), name="workflow-condition-update"),\n    path("workflow-conditions/<uuid:condition_id>/deactivate/", WorkflowConditionDeactivateAPIView.as_view(), name="workflow-condition-deactivate"),\n    path("workflow-conditions/<uuid:condition_id>/delete/", WorkflowConditionDeleteAPIView.as_view(), name="workflow-condition-delete"),\n    path("workflow-actions/<uuid:action_id>/update/", WorkflowActionUpdateAPIView.as_view(), name="workflow-action-update"),\n    path("workflow-actions/<uuid:action_id>/deactivate/", WorkflowActionDeactivateAPIView.as_view(), name="workflow-action-deactivate"),\n    path("workflow-actions/<uuid:action_id>/delete/", WorkflowActionDeleteAPIView.as_view(), name="workflow-action-delete"),\n    path("workflow-actions/<uuid:action_id>/reorder/", WorkflowActionReorderAPIView.as_view(), name="workflow-action-reorder"),\n]
