@@ -882,6 +882,129 @@ class WorkflowAction(models.Model):
         return f"{self.transition.name}: {self.name}"
 
 
+class WorkflowActionExecution(models.Model):
+    """Persistent execution record for a workflow action."""
+
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("skipped", "Skipped"),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    workflow_instance = models.ForeignKey(
+        WorkflowInstance,
+        on_delete=models.CASCADE,
+        related_name="action_executions",
+    )
+
+    workflow_action = models.ForeignKey(
+        WorkflowAction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="executions",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
+
+    started_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    error = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    result = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    retry_count = models.PositiveIntegerField(
+        default=0,
+    )
+
+    max_retries = models.PositiveIntegerField(
+        default=3,
+    )
+
+    next_retry_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    last_retry_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    queued_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    claimed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    worker_id = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+
+    class Meta:
+        ordering = ("-started_at",)
+        indexes = [
+            models.Index(
+                fields=("workflow_instance", "started_at"),
+            ),
+            models.Index(
+                fields=("workflow_action", "started_at"),
+            ),
+            models.Index(
+                fields=("status", "started_at"),
+            ),
+            models.Index(
+                fields=("status", "queued_at"),
+            ),
+            models.Index(
+                fields=("status", "next_retry_at"),
+            ),
+        ]
+
+    def __str__(self):
+        action_name = (
+            self.workflow_action.name
+            if self.workflow_action
+            else "Deleted Action"
+        )
+
+        return (
+            f"{action_name} / "
+            f"{self.workflow_instance_id} / "
+            f"{self.status}"
+        )
+
+
 class WorkflowTrigger(models.Model):
     EVENT_TYPES = (
         ("record_created", "Record Created"),

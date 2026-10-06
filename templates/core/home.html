@@ -1,329 +1,1221 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IndusCMS — Industry Business Platform</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
+```
+<title>IndusCMS — Business Application Platform</title>
+
+<meta
+    name="description"
+    content="IndusCMS is an industry-first CMS and business application platform built with Django."
+>
+
+<style>
+    :root {
+        --bg: #f4f7fb;
+        --surface: #ffffff;
+        --surface-soft: #f8fafc;
+        --text: #111827;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --dark: #0f172a;
+        --dark-soft: #1e293b;
+        --success: #047857;
+        --success-bg: #ecfdf5;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        line-height: 1.6;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .container {
+        width: min(1180px, calc(100% - 36px));
+        margin: 0 auto;
+    }
+
+    /* NAVIGATION */
+
+    .nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(14px);
+        background: rgba(244, 247, 251, 0.88);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .nav-inner {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: -0.5px;
+    }
+
+    .brand-mark {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        color: white;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        font-weight: 900;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 22px;
+        color: #475569;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .nav-links a:hover {
+        color: var(--primary);
+    }
+
+    /* HERO */
+
+    .hero {
+        padding: 90px 0 70px;
+    }
+
+    .hero-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 60px;
+        align-items: center;
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 13px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #dbeafe;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 22px;
+    }
+
+    .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+    }
+
+    h1 {
+        margin: 0;
+        max-width: 850px;
+        font-size: clamp(48px, 8vw, 82px);
+        line-height: 0.98;
+        letter-spacing: -4px;
+    }
+
+    .gradient-text {
+        background: linear-gradient(90deg, #2563eb, #7c3aed);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .hero-subtitle {
+        margin: 25px 0 0;
+        max-width: 760px;
+        color: #334155;
+        font-size: clamp(20px, 3vw, 27px);
+        line-height: 1.45;
+        letter-spacing: -0.5px;
+    }
+
+    .hero-description {
+        margin-top: 20px;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 17px;
+    }
+
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 19px;
+        border-radius: 11px;
+        font-size: 14px;
+        font-weight: 800;
+        border: 1px solid var(--border);
+    }
+
+    .button-primary {
+        color: white;
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .button-primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .button-secondary {
+        background: white;
+    }
+
+    .button-secondary:hover {
+        background: var(--surface-soft);
+    }
+
+    /* HERO ARCHITECTURE CARD */
+
+    .architecture-card {
+        background: var(--dark);
+        color: white;
+        border-radius: 24px;
+        padding: 30px;
+        box-shadow: 0 25px 70px rgba(15, 23, 42, 0.18);
+    }
+
+    .architecture-title {
+        color: #94a3b8;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
+    .architecture-flow {
+        display: grid;
+        gap: 10px;
+    }
+
+    .flow-item {
+        padding: 14px 16px;
+        background: var(--dark-soft);
+        border: 1px solid #334155;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .flow-arrow {
+        text-align: center;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    /* STATUS */
+
+    .status-strip {
+        margin-top: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .status-item {
+        padding: 10px 13px;
+        border-radius: 10px;
+        background: var(--success-bg);
+        color: var(--success);
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid #a7f3d0;
+    }
+
+    /* SECTIONS */
+
+    .section {
+        padding: 75px 0;
+    }
+
+    .section-header {
+        max-width: 760px;
+        margin-bottom: 35px;
+    }
+
+    .section-kicker {
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+    }
+
+    h2 {
+        margin: 8px 0 12px;
+        font-size: clamp(32px, 5vw, 48px);
+        line-height: 1.08;
+        letter-spacing: -2px;
+    }
+
+    .section-description {
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+    }
+
+    /* CARDS */
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 25px;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .card-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: var(--primary);
+        font-weight: 900;
+        margin-bottom: 18px;
+    }
+
+    .card h3 {
+        margin: 0 0 8px;
+        font-size: 19px;
+    }
+
+    .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    /* ENGINE GRID */
+
+    .engine-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+
+    .engine {
+        padding: 21px;
+        border-radius: 15px;
+        background: white;
+        border: 1px solid var(--border);
+    }
+
+    .engine strong {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .engine span {
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    /* WORKFLOW */
+
+    .workflow-box {
+        background: var(--dark);
+        color: white;
+        border-radius: 24px;
+        padding: 35px;
+        overflow-x: auto;
+    }
+
+    .workflow-box pre {
+        margin: 0;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        line-height: 1.8;
+        font-size: 14px;
+    }
+
+    /* INDUSTRIES */
+
+    .industry-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 13px;
+    }
+
+    .industry {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+        padding: 17px;
+        font-weight: 750;
+        font-size: 14px;
+    }
+
+    /* TEST STATUS */
+
+    .test-section {
+        background: #eef6ff;
+        border-top: 1px solid #dbeafe;
+        border-bottom: 1px solid #dbeafe;
+    }
+
+    .test-box {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .test-number {
+        font-size: clamp(48px, 7vw, 76px);
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: -4px;
+        color: #1d4ed8;
+    }
+
+    .test-label {
+        margin-top: 8px;
+        color: #475569;
+        font-weight: 700;
+    }
+
+    /* FOOTER */
+
+    footer {
+        padding: 45px 0;
+        background: var(--dark);
+        color: #cbd5e1;
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 30px;
+        align-items: center;
+    }
+
+    .footer-brand {
+        color: white;
+        font-weight: 850;
+        font-size: 18px;
+    }
+
+    .footer-description {
+        margin-top: 8px;
+        max-width: 580px;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .footer-meta {
+        color: #64748b;
+        font-size: 13px;
+        text-align: right;
+    }
+
+    /* RESPONSIVE */
+
+    @media (max-width: 1000px) {
+        .hero-grid {
+            grid-template-columns: 1fr;
         }
 
-        body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f5f7fb;
-            color: #172033;
+        .engine-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
 
-        .container {
-            max-width: 1150px;
-            margin: auto;
-            padding: 25px 18px 60px;
+        .industry-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 760px) {
+        .nav-links {
+            display: none;
         }
 
         .hero {
-            background: #ffffff;
-            padding: 70px 55px;
-            border-radius: 24px;
-            box-shadow: 0 12px 40px rgba(0,0,0,.08);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 20px;
+            padding-top: 55px;
         }
 
         h1 {
-            font-size: clamp(42px, 7vw, 68px);
-            line-height: 1;
-            margin: 0 0 20px;
-            letter-spacing: -2px;
-        }
-
-        .tagline {
-            font-size: 24px;
-            line-height: 1.5;
-            color: #374151;
-            max-width: 850px;
-        }
-
-        .description {
-            font-size: 17px;
-            line-height: 1.7;
-            color: #6b7280;
-            max-width: 850px;
-            margin-top: 20px;
-        }
-
-        .section {
-            margin-top: 50px;
-        }
-
-        .section h2 {
-            font-size: 30px;
-            margin-bottom: 22px;
+            letter-spacing: -2.5px;
         }
 
         .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 18px;
+            grid-template-columns: 1fr;
         }
 
-        .card {
-            background: #f8fafc;
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
+        .engine-grid {
+            grid-template-columns: 1fr;
         }
 
-        .card h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
+        .industry-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
 
-        .card p {
-            margin: 0;
-            color: #6b7280;
-            line-height: 1.6;
+        .test-box {
+            grid-template-columns: 1fr;
         }
 
-        .status {
-            margin-top: 35px;
-            padding: 25px;
-            border-radius: 16px;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            line-height: 1.7;
+        .footer-grid {
+            grid-template-columns: 1fr;
         }
 
-        .architecture {
-            padding: 25px;
-            background: #111827;
-            color: white;
-            border-radius: 16px;
-            overflow-x: auto;
+        .footer-meta {
+            text-align: left;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            width: min(100% - 24px, 1180px);
         }
 
-        .architecture pre {
-            margin: 0;
-            font-family: monospace;
-            line-height: 1.7;
+        .hero {
+            padding-top: 40px;
         }
 
-        .footer {
-            text-align: center;
-            color: #6b7280;
-            margin-top: 40px;
-            font-size: 14px;
+        .architecture-card,
+        .workflow-box {
+            border-radius: 17px;
+            padding: 22px;
         }
 
-        @media (max-width: 700px) {
-            .hero {
-                padding: 40px 24px;
-            }
-
-            .tagline {
-                font-size: 20px;
-            }
+        .industry-grid {
+            grid-template-columns: 1fr;
         }
-    </style>
+    }
+</style>
+```
+
 </head>
 
 <body>
 
-<div class="container">
+<nav class="nav">
+    <div class="container nav-inner">
+
+```
+    <a href="/" class="brand">
+        <span class="brand-mark">I</span>
+        <span>IndusCMS</span>
+    </a>
+
+    <div class="nav-links">
+        <a href="#platform">Platform</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#industries">Industries</a>
+        <a href="#status">Status</a>
+    </div>
+
+</div>
+```
+
+</nav>
+
+<main>
+
+```
+<!-- HERO -->
 
 <section class="hero">
+    <div class="container hero-grid">
 
-    <div class="badge">
-        Industry-first Business Platform
-    </div>
+        <div>
 
-    <h1>IndusCMS</h1>
-
-    <div class="tagline">
-        Build configurable business applications on one reusable platform.
-    </div>
-
-    <div class="description">
-        IndusCMS provides reusable infrastructure for businesses,
-        dynamic data, relationships, workflows, events, permissions
-        and future industry-specific applications.
-    </div>
-
-    <div class="section">
-
-        <h2>Platform Engines</h2>
-
-        <div class="grid">
-
-            <div class="card">
-                <h3>Business Engine</h3>
-                <p>
-                    Businesses, memberships, roles, permissions,
-                    settings and audit logging.
-                </p>
+            <div class="eyebrow">
+                <span class="dot"></span>
+                Industry-first Business Platform
             </div>
 
-            <div class="card">
-                <h3>Dynamic Entity Engine</h3>
-                <p>
-                    Define configurable entities, fields and records
-                    without creating a new Django model for every object.
-                </p>
+            <h1>
+                Build business software
+                <span class="gradient-text">once.</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                IndusCMS is a reusable CMS and business application
+                platform for building configurable industry software
+                with Django.
+            </p>
+
+            <p class="hero-description">
+                Businesses, dynamic entities, relationships, workflows,
+                events, actions, APIs, permissions and audit systems
+                come together as reusable platform infrastructure.
+            </p>
+
+            <div class="hero-actions">
+                <a class="button button-primary" href="#platform">
+                    Explore Platform
+                </a>
+
+                <a class="button button-secondary" href="#workflow">
+                    See Workflow Engine
+                </a>
             </div>
 
-            <div class="card">
-                <h3>Workflow Engine</h3>
-                <p>
-                    Build workflows using steps, transitions,
-                    instances and persistent history.
-                </p>
+            <div class="status-strip">
+
+                <div class="status-item">
+                    223 / 223 Tests Passing
+                </div>
+
+                <div class="status-item">
+                    Phase 4 Complete
+                </div>
+
+                <div class="status-item">
+                    Django
+                </div>
+
             </div>
 
-            <div class="card">
-                <h3>Event Engine</h3>
-                <p>
-                    Record events can trigger workflows automatically
-                    through configurable workflow triggers.
-                </p>
+        </div>
+
+        <div class="architecture-card">
+
+            <div class="architecture-title">
+                Platform Flow
+            </div>
+
+            <div class="architecture-flow">
+
+                <div class="flow-item">
+                    Business
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-item">
+                    Dynamic Entities
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-item">
+                    Records & Relationships
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-item">
+                    Workflow & Conditions
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-item">
+                    Events & Triggers
+                </div>
+
+                <div class="flow-arrow">↓</div>
+
+                <div class="flow-item">
+                    Actions & Automation
+                </div>
+
             </div>
 
         </div>
 
     </div>
+</section>
 
-    <div class="section">
 
-        <h2>What Works Today</h2>
+<!-- PLATFORM -->
 
-        <div class="grid">
+<section class="section" id="platform">
 
-            <div class="card">
-                <h3>Dynamic Data</h3>
-                <p>
-                    Entities, fields, records, validation,
-                    search, sorting and pagination.
-                </p>
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Platform
             </div>
 
-            <div class="card">
-                <h3>Relationships</h3>
-                <p>
-                    Connect business records using validated
-                    entity relationships.
-                </p>
-            </div>
+            <h2>
+                Reusable infrastructure for business applications.
+            </h2>
 
-            <div class="card">
-                <h3>Workflow Automation</h3>
-                <p>
-                    Create workflows with steps, transitions,
-                    instances and history.
-                </p>
-            </div>
-
-            <div class="card">
-                <h3>Event Triggers</h3>
-                <p>
-                    React to record creation, updates and deletion
-                    using workflow triggers.
-                </p>
-            </div>
-
-            <div class="card">
-                <h3>Permissions</h3>
-                <p>
-                    Business membership and role-based access
-                    control across platform operations.
-                </p>
-            </div>
-
-            <div class="card">
-                <h3>Audit Logging</h3>
-                <p>
-                    Important business and workflow operations
-                    can be tracked through audit events.
-                </p>
-            </div>
+            <p class="section-description">
+                Instead of rebuilding the same backend for every
+                industry, IndusCMS provides reusable engines that can
+                be assembled into different applications.
+            </p>
 
         </div>
 
-    </div>
+        <div class="engine-grid">
 
-    <div class="section">
+            <div class="engine">
+                <strong>Business Engine</strong>
+                <span>
+                    Businesses, memberships, roles and permissions.
+                </span>
+            </div>
 
-        <h2>Event-Driven Workflows</h2>
+            <div class="engine">
+                <strong>Entity Engine</strong>
+                <span>
+                    Configurable entities, fields and records.
+                </span>
+            </div>
 
-        <div class="architecture">
-<pre>
-Entity Record
-     |
-     v
-Record Event
-     |
-     v
-Workflow Trigger
-     |
-     v
-Condition / Configuration
-     |
-     v
-Workflow Instance
-     |
-     v
-Workflow Step
-     |
-     v
-Workflow History
-     |
-     v
-Audit Log
-</pre>
+            <div class="engine">
+                <strong>Relationship Engine</strong>
+                <span>
+                    Connect dynamic business records.
+                </span>
+            </div>
+
+            <div class="engine">
+                <strong>Workflow Engine</strong>
+                <span>
+                    Steps, transitions, conditions and instances.
+                </span>
+            </div>
+
+            <div class="engine">
+                <strong>Event Engine</strong>
+                <span>
+                    Record events and workflow triggers.
+                </span>
+            </div>
+
+            <div class="engine">
+                <strong>Action Engine</strong>
+                <span>
+                    Actions, webhooks, retries and execution history.
+                </span>
+            </div>
+
+            <div class="engine">
+                <strong>API Engine</strong>
+                <span>
+                    REST API foundation and integrations.
+                </span>
+            </div>
+
+            <div class="engine">
+                <strong>Plugin Engine</strong>
+                <span>
+                    Planned extension system for industry modules.
+                </span>
+            </div>
+
         </div>
-
-    </div>
-
-    <div class="status">
-
-        <strong>Phase 4.4C — Workflow Triggers & Event Dispatcher</strong>
-
-        <br><br>
-
-        IndusCMS currently has a tested foundation for
-        configurable business data and event-driven workflows.
-
-        <br><br>
-
-        <strong>188 / 188 tests passing</strong>
-
-        <br><br>
-
-        Supported record events:
-
-        <strong>
-            record_created · record_updated · record_deleted
-        </strong>
 
     </div>
 
 </section>
 
-<div class="footer">
-    IndusCMS · Industry-first CMS & Business Platform
-    {% if version %} · v{{ version }}{% endif %}
-</div>
+
+<!-- FEATURES -->
+
+<section class="section">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Foundation
+            </div>
+
+            <h2>
+                Designed for configurable business software.
+            </h2>
+
+        </div>
+
+        <div class="grid">
+
+            <div class="card">
+                <div class="card-icon">01</div>
+                <h3>Dynamic Data</h3>
+                <p>
+                    Define business entities, fields and records
+                    without creating a dedicated Django model for
+                    every business object.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">02</div>
+                <h3>Permissions</h3>
+                <p>
+                    Businesses, memberships, roles and permission
+                    checks provide the foundation for multi-business
+                    applications.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">03</div>
+                <h3>Relationships</h3>
+                <p>
+                    Connect customers, invoices, employees, products,
+                    vehicles, tickets and other dynamic records.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">04</div>
+                <h3>Conditional Workflows</h3>
+                <p>
+                    Workflow transitions can evaluate record data
+                    and choose the appropriate business path.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">05</div>
+                <h3>Event Automation</h3>
+                <p>
+                    Record creation, updates and deletion can trigger
+                    configured workflows automatically.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">06</div>
+                <h3>Persistent Execution</h3>
+                <p>
+                    Actions have persistent execution records,
+                    retries, results, errors and worker information.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- WORKFLOW -->
+
+<section class="section" id="workflow">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Workflow Engine
+            </div>
+
+            <h2>
+                From business event to automated action.
+            </h2>
+
+            <p class="section-description">
+                Phase 4 establishes the event-driven workflow
+                foundation for configurable business automation.
+            </p>
+
+        </div>
+
+        <div class="workflow-box">
+```
+
+<pre>
+Entity Record
+      |
+      v
+Record Event
+      |
+      +---- record_created
+      +---- record_updated
+      +---- record_deleted
+      |
+      v
+Workflow Trigger
+      |
+      v
+Condition Evaluation
+      |
+      v
+Workflow Instance
+      |
+      v
+Workflow Transition
+      |
+      v
+Action
+      |
+      +---- Synchronous
+      |
+      +---- Asynchronous
+                 |
+                 v
+             DB Queue
+                 |
+                 v
+          Workflow Worker
+                 |
+        +--------+--------+
+        |                 |
+        v                 v
+     Success           Failure
+                          |
+                          v
+                       Retry
+                          |
+                          v
+                    Audit / History
+</pre>
+
+```
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- CURRENT CAPABILITIES -->
+
+<section class="section">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Current Capabilities
+            </div>
+
+            <h2>
+                What is working today.
+            </h2>
+
+        </div>
+
+        <div class="grid">
+
+            <div class="card">
+                <h3>Workflow Triggers</h3>
+                <p>
+                    Record-created, record-updated and record-deleted
+                    events can activate workflows.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Webhook Actions</h3>
+                <p>
+                    Workflow actions can call external HTTP endpoints
+                    with timeout, validation and security controls.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Retry System</h3>
+                <p>
+                    Failed actions can be retried with persistent
+                    retry counters and scheduled backoff.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Async Worker</h3>
+                <p>
+                    Asynchronous actions can be queued and processed
+                    by a Django database-backed worker.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Execution History</h3>
+                <p>
+                    Action execution status, result, error and retry
+                    information are persisted.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Audit Trail</h3>
+                <p>
+                    Workflow operations and important automation
+                    events can be tracked through audit records.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- INDUSTRIES -->
+
+<section class="section" id="industries">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Industry Templates
+            </div>
+
+            <h2>
+                One platform. Many industries.
+            </h2>
+
+            <p class="section-description">
+                The long-term goal is to create reusable industry
+                templates on top of the same IndusCMS foundation.
+            </p>
+
+        </div>
+
+        <div class="industry-grid">
+
+            <div class="industry">CRM</div>
+            <div class="industry">Restaurant</div>
+            <div class="industry">School</div>
+            <div class="industry">Security Agency</div>
+            <div class="industry">Logistics</div>
+            <div class="industry">Retail</div>
+            <div class="industry">Inventory</div>
+            <div class="industry">HR</div>
+            <div class="industry">Accounting</div>
+            <div class="industry">Fleet</div>
+            <div class="industry">Booking</div>
+            <div class="industry">Ticketing</div>
+            <div class="industry">Field Service</div>
+            <div class="industry">Membership</div>
+            <div class="industry">Subscriptions</div>
+            <div class="industry">Projects</div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- TEST STATUS -->
+
+<section class="section test-section" id="status">
+
+    <div class="container">
+
+        <div class="test-box">
+
+            <div>
+
+                <div class="section-kicker">
+                    Engineering Status
+                </div>
+
+                <h2>
+                    Phase 4 is locally verified.
+                </h2>
+
+                <p class="section-description">
+                    Workflow, automation, event dispatching, retries,
+                    asynchronous execution and workflow engine tests
+                    are currently passing together.
+                </p>
+
+            </div>
+
+            <div>
+                <div class="test-number">
+                    223/223
+                </div>
+
+                <div class="test-label">
+                    tests passing
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- FUTURE -->
+
+<section class="section">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <div class="section-kicker">
+                Roadmap
+            </div>
+
+            <h2>
+                Moving from workflow infrastructure to a full platform.
+            </h2>
+
+            <p class="section-description">
+                The next platform layers include a stronger API system,
+                plugin architecture, industry templates, dashboards,
+                reporting and a modern frontend.
+            </p>
+
+        </div>
+
+        <div class="grid">
+
+            <div class="card">
+                <h3>API Platform</h3>
+                <p>
+                    Authentication, API keys, integrations,
+                    import/export and external application access.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Plugin Engine</h3>
+                <p>
+                    Installable business extensions with APIs,
+                    permissions, workflows and configuration.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Industry Templates</h3>
+                <p>
+                    Preconfigured applications for industries such
+                    as CRM, schools, restaurants and logistics.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Dashboard Engine</h3>
+                <p>
+                    Configurable dashboards, views, reports and
+                    business metrics.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>Modern Frontend</h3>
+                <p>
+                    Planned React and Next.js interface for building
+                    and operating business applications.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>AI & Integrations</h3>
+                <p>
+                    Future integrations can connect AI, accounting,
+                    communication, payment and external systems.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+```
+
+</main>
+
+<footer>
+
+```
+<div class="container footer-grid">
+
+    <div>
+
+        <div class="footer-brand">
+            IndusCMS
+        </div>
+
+        <div class="footer-description">
+            Industry-first CMS and business application platform
+            built with Django. Build reusable infrastructure once
+            and configure it for many industries.
+        </div>
+
+    </div>
+
+    <div class="footer-meta">
+        Phase 4 — Workflow & Automation Engine<br>
+        {% if version %}Version {{ version }}{% endif %}
+    </div>
 
 </div>
+```
+
+</footer>
 
 </body>
 </html>

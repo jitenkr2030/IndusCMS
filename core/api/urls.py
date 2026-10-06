@@ -32,6 +32,12 @@ from core.api.workflow_action_views import (
     WorkflowActionListAPIView,
 )
 
+from core.api.workflow_action_execution_views import (
+    WorkflowActionExecutionListAPIView,
+    WorkflowActionExecutionDetailAPIView,
+    WorkflowActionExecutionRetryAPIView,
+)
+
 from core.api.workflow_trigger_views import (
     WorkflowTriggerCreateAPIView,
     WorkflowTriggerListAPIView,
@@ -276,6 +282,24 @@ path(
 ),
 ]
 
+
+urlpatterns += [
+    path(
+        "workflow-action-executions/",
+        WorkflowActionExecutionListAPIView.as_view(),
+        name="workflow-action-execution-list",
+    ),
+    path(
+        "workflow-action-executions/<uuid:execution_id>/",
+        WorkflowActionExecutionDetailAPIView.as_view(),
+        name="workflow-action-execution-detail",
+    ),
+    path(
+        "workflow-action-executions/<uuid:execution_id>/retry/",
+        WorkflowActionExecutionRetryAPIView.as_view(),
+        name="workflow-action-execution-retry",
+    ),
+]
 
 urlpatterns += [
     path(
